@@ -1,124 +1,151 @@
-"""
-CMPS 6610  Problem Set 2
-See problemset-02.pdf for details.
-"""
-import time
-import tabulate
+from collections import defaultdict
 
-class BinaryNumber:
-    def __init__(self, n):
-        if isinstance(n, int):  # Ensure n is an integer
-            self.decimal_val = n
-            self.binary_vec = list('{0:b}'.format(n))
-        elif isinstance(n, str):  # For cases where n might be a binary string
-            self.decimal_val = int(n, 2)
-            self.binary_vec = list(n)
-        else:
-            raise ValueError("BinaryNumber must be initialized with an integer or binary string.")
+def supersort(a, k):
+    """
+    The main sorting algorithm. You'll complete the
+    three funcions count_values, get_positions, and construct_output.
+    
+    Params:
+      a.....the input list
+      k.....the maximum element in a
+      
+    Returns:
+      sorted version a
+    """
+    counts = count_values(a, k)
+    positions = get_positions(counts)
+    return construct_output(a, positions)
 
-    def __repr__(self):
-        return f'decimal={self.decimal_val} binary={"".join(self.binary_vec)}'
+def count_values(a, k):
+    """
+    Params:
+      a.....input list
+      k.....maximum value in a
+      
+    Returns:
+      a list of k values; element i of the list indicates
+      how often value i appears in a
+      
+    >>> count_values([2,2,1,0,1,0,1,3], 3)
+    [2, 3, 2, 1]
+    """
+    count = [0] * (k + 1)
 
-def binary2int(binary_number):
-    binary_vec = binary_number.binary_vec
-    if len(binary_vec) == 0:
-        return BinaryNumber(0)
-    return BinaryNumber(int(''.join(binary_vec), 2))
+    for i in a:
+        count[i] += 1
+    return count
 
-def split_number(binary_number):
-    mid = len(binary_number.binary_vec) // 2
-    high = BinaryNumber(int(''.join(binary_number.binary_vec[:mid]), 2))
-    low = BinaryNumber(int(''.join(binary_number.binary_vec[mid:]), 2))
-    return high, low
+def test_count_values():
+    assert count_values([2,2,1,0,1,0,1,3], 3) == [2, 3, 2, 1]
+    
+def get_positions(counts):
+    """
+    Params:
+      counts...counts of each value in the input
+    Returns:
+      a list p where p[i] indicates the location of the first
+      appearance of i in the desired output.
 
-def bit_shift(binary_number, n):
-    return BinaryNumber(int(''.join(binary_number.binary_vec) + '0' * n, 2))
+    >>> get_positions([2, 3, 2, 1])
+    [0, 2, 5, 7]    
+    """
+    pre, _ = scan(lambda x, y: x + y, 0, counts[:-1])
+    return [0] + pre
+    
+def test_get_positions():
+    assert get_positions([2, 3, 2, 1]) == [0, 2, 5, 7]
+    
+def construct_output(a, positions):
+    """
+    Construct the final, sorted output.
 
-def pad(x, y):
-    max_len = max(len(x.binary_vec), len(y.binary_vec))
-    if max_len % 2 != 0:
-        max_len += 1
-    x_padded = ['0'] * (max_len - len(x.binary_vec)) + x.binary_vec
-    y_padded = ['0'] * (max_len - len(y.binary_vec)) + y.binary_vec
-    return BinaryNumber(int(''.join(x_padded), 2)), BinaryNumber(int(''.join(y_padded), 2))
+    Params:
+      a...........input list
+      positions...list of first location of each value in the output.
+      
+    Returns:
+      sorted version of a
 
-def quadratic_multiply(x, y):
-    x_int = int(''.join(x.binary_vec), 2)
-    y_int = int(''.join(y.binary_vec), 2)
-    result_int = x_int * y_int
-    return BinaryNumber(result_int)
+    >>> construct_output([2,2,1,0,1,0,1,3], [0, 2, 5, 7])
+    [0,0,1,1,1,2,2,3]    
+    """
+    result = [0] * len(a)
 
-def subquadratic_multiply(x, y):
-    x_vec = x.binary_vec
-    y_vec = y.binary_vec
+    position = positions[:]
 
-    if len(x_vec) == 1 or len(y_vec) == 1:
-        return BinaryNumber(int(''.join(x_vec), 2) * int(''.join(y_vec), 2))
+    for i in a: 
+        result[position[i]] = i
+        position[i] += 1
 
-    x, y = pad(x, y)
-    x1, x0 = split_number(x)
-    y1, y0 = split_number(y)
+    return result
 
-    print(f"x1: {x1}, x0: {x0}, y1: {y1}, y0: {y0}")
+def test_construct_output():
+    assert construct_output([2,2,1,0,1,0,1,3], [0, 2, 5, 7]) == [0,0,1,1,1,2,2,3]
+    
+def count_values_mr(a, k):
+    """
+    Use map-reduce to implement count_values.
+    This is done; you'll have to complete count_map and count_reduce.
+    """
+    # done.
+    int2count = dict(run_map_reduce(count_map, count_reduce, a))
+    return [int2count.get(i,0) for i in range(k+1)]
 
-    z2 = subquadratic_multiply(x1, y1)
-    z0 = subquadratic_multiply(x0, y0)
-    z1 = subquadratic_multiply(BinaryNumber(x1.decimal_val + x0.decimal_val), 
-                               BinaryNumber(y1.decimal_val + y0.decimal_val))
+def test_count_values_mr():
+    assert count_values_mr([2,2,1,0,1,0,1,3], 3) == [2, 3, 2, 1]
 
-    print(f"z2: {z2}, z0: {z0}, z1: {z1}")
+def count_map(value):
+    return [(value, 1)]
 
-    result_int = z2.decimal_val * (2 ** (2 * len(x1.binary_vec))) + \
-                 ((z1.decimal_val - z2.decimal_val - z0.decimal_val) * (2 ** len(x1.binary_vec))) + \
-                 z0.decimal_val
-
-    print(f"Result: {result_int}")
-
-    return BinaryNumber(result_int)
+def count_reduce(group):
+    key = group[0]  
+    total = sum(group[1])  
+    return (key, total)
 
 
-def test_binary_number():
-    bn1 = BinaryNumber(10)
-    assert bn1.decimal_val == 10
-    assert ''.join(bn1.binary_vec) == '1010'
+# the below functions are provided for use above.
 
-    bn2 = BinaryNumber('1010')
-    assert bn2.decimal_val == 10
-    assert ''.join(bn2.binary_vec) == '1010'
+def run_map_reduce(map_f, reduce_f, mylist):
+    # done. 
+    pairs = flatten(list(map(map_f, mylist)))
+    groups = collect(pairs)
+    return [reduce_f(g) for g in groups]
 
-    try:
-        BinaryNumber([1, 0, 1, 0])
-    except ValueError as e:
-        assert str(e) == "BinaryNumber must be initialized with an integer or binary string."
+def collect(pairs):
+    # done.     
+    result = defaultdict(list)
+    for pair in sorted(pairs):
+        result[pair[0]].append(pair[1])
+    return list(result.items())
 
-test_binary_number()
+def plus(x,y):
+    # done. 
+    return x + y
 
-def test_multiply():
-    assert binary2int(quadratic_multiply(BinaryNumber(2), BinaryNumber(2))).decimal_val == 2 * 2
-    assert binary2int(subquadratic_multiply(BinaryNumber(2), BinaryNumber(2))).decimal_val == 2 * 2
 
-def time_multiply(x, y, f):
-    start = time.time()
-    f(x, y)
-    return (time.time() - start) * 1000
+def scan(f, id_, a):
+    # done. 
+    return (
+            [reduce(f, id_, a[:i+1]) for i in range(len(a))],
+             reduce(f, id_, a)
+           )
 
-def compare_multiply():
-    res = []
-    for n in [10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000, 1000000000]:
-        qtime = time_multiply(BinaryNumber(n), BinaryNumber(n), quadratic_multiply)
-        subqtime = time_multiply(BinaryNumber(n), BinaryNumber(n), subquadratic_multiply)
-        res.append((n, qtime, subqtime))
-    print_results(res)
-
-def print_results(results):
-    print("\n")
-    print(
-        tabulate.tabulate(
-            results,
-            headers=['n', 'quadratic', 'subquadratic'],
-            floatfmt=".3f",
-            tablefmt="github"))
-
-test_multiply()
-
-compare_multiply()
+def reduce(f, id_, a):
+    # done. do not change me.
+    if len(a) == 0:
+        return id_
+    elif len(a) == 1:
+        return a[0]
+    else:
+        return f(reduce(f, id_, a[:len(a)//2]),
+                 reduce(f, id_, a[len(a)//2:]))
+    
+def iterate(f, x, a):
+    # done. do not change me.
+    if len(a) == 0:
+        return x
+    else:
+        return iterate(f, f(x, a[0]), a[1:])
+    
+def flatten(sequences):
+    return iterate(plus, [], sequences)

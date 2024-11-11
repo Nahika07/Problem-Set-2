@@ -1,4 +1,4 @@
-# CMPS 6610  Answers for Lab 04
+# CMPS 6610  Lab 04
 
 In this lab, we'll work a bit more with sequences and look at the
 divide-and-conquer paradigm.
@@ -44,7 +44,7 @@ We can use `scan` to create the needed list. You may need to adjust slightly the
 3. What is the work and span of `get_positions`? (assume our more efficient version of `scan` from class)
 
 > **put in answers.md**
-The work is O(n) because n is the length of the input array for counts. And the span is O(log n) because it operates in parallelism to create the prefix sums. 
+
 .  
 .  
 . 
@@ -62,7 +62,6 @@ Implement `construct_output` with a simple for loop and test with `test_construc
 5. What is the work and span of `construct_output`?
 
 > **put in answers.md**
-Th work would be O(n) because there is a single loop that reiterates over list a which may have a size of n. The span would also be O(n) since it is sequential and has a propotion to the amount of iterations (which happens for every element in list a). 
 
 .  
 .  
@@ -71,7 +70,7 @@ Th work would be O(n) because there is a single loop that reiterates over list a
 
 6. What is the work and span of `supersort`?
 
-> The work of supersort would be O(n) becase count_values iterates through the list n times, same with get positions and contruct input. The span would be O(log n) because while the span of construct input would be O(1), the span is still dominated by get poistions(O(log n)). 
+> **put in answers.md**
 
 .  
 .  
@@ -88,7 +87,7 @@ Th work would be O(n) because there is a single loop that reiterates over list a
 8. What is work and span of `count_values_mr`?
 
 > **put in answers.md**
-.  The work would be O(n) because if the input has a length of n, then the work of the map phase, the grouping the key pairs and the count_reduce phase is all O(n). For the span, the count map could be done using parallelism so it would be O(1), the time to group those values together would be O(log n) since there are condensing, and the reduce section would also be O(1), so therefore the span is O(log n)
+.  
 .  
 . 
 
@@ -106,8 +105,7 @@ a) Before we look at proving the correctness of an algorithm, let's
    Prove that this formula is correct by induction.
 
 > **put in answers.md**
-
-When looking at the base case which would be n=0, the formula ends up being a-1/a-1 which equals to 1 so that is true.  When doing the inductive step, we must make sure that n = k. a^k+1 - 1 / a-1. Then k + 1, a^i + a^k+1, then (a^k+1 -1/a-1) + a^k+1, then (a^k+1)-1 +a^k+1 (a-1)/a-1, then after simplifying you get (a^k+2)-1/a-1. 
+.  
 .  
 . 
 
@@ -115,25 +113,25 @@ b) Prove the correctness of `reduce` using induction.
 	   
 
 > **put in answers.md**
-For the first base case n = 0, in the empty list, it just returns the id element which is true. For the second n = 1, if the list has one element i (reduce f, id, [i]) = i, this is right when you put f with id which will give you the element i. When looking at a list of k + 1, reduce(f, id, x...x k+1), each call to reduce gives the correct result for those peices so when you incorporate f, they will give the proper results. 
+.  
 .  
 . 
 
-c) Prove the correctness of the divide and conquer version of `span` using induction. 
+c) Prove the correctness of the divide and conquer version of `scan` using induction. 
 
 
 > **put in answers.md**
-For an empty list (n = 0) can will result in a list that is empty. In a base case where n = 1, as in a list with one element (scan(f, id, x)) this will output the prefix sum. When looking at a list of length k + 1, when scan is called the list is split and it is called on both parts, then they are both combined with the correct balance for the prefix sums, so when factoring induction, scan is correct. 
+.  
 .  
 . 
 
-d) Prove the correctness of the contraction-based version of `span`
+d) Prove the correctness of the contraction-based version of `scan`
 from Module 3. Compare this proof to the divide-and-conquer
 version. Are they significantly different? Was one easier than the
 other?
 
 > **put in answers.md**
-.  The two base cases are the same as above, and when factoring induction, we are till assuming that the function correctly calculates the prefix sums and when each contraction shrinks the problem size, the results are placed together in a correct way. They are similar when it comes to the base cases, however, the divide and conquer verision splits the lists directly while the contraction verison had an alternate way to combine the halves. 
+.  
 .  
 . 
 
