@@ -1,151 +1,216 @@
-from collections import defaultdict
+import math, time
+import tabulate
 
-def supersort(a, k):
-    """
-    The main sorting algorithm. You'll complete the
-    three funcions count_values, get_positions, and construct_output.
+class BinaryHeap:
+    def __init__(self):
+        self.H = []
+        
+    def __repr__(self):
+        return str(self.H)
+
+    # return the left child of node i
+    def lchild(self, i):     
+        """
+        See test_lchild below.
+
+        Params:
+        i....index of node
+        Returns:
+        j....index of the left child of node i, or -1 if n/a
+        """
+        if (2*i + 1) < len(self.H):
+            return (2*i + 1)
+        else:
+            return -1
+
+    # return the right child of node i
+    def rchild(self, i):
+        """
+        See test_rchild below.
+
+        Params:
+        i....index of node
+        Returns:
+        j....index of the right child of node i, or -1 if n/a
+        """
+        if (2*i + 2) < len(self.H):
+            return (2*i + 2)
+        else:
+            return -1
+
+    # return the parent of node i
+    def parent(self, i):
+        """
+        See test_parent below.
+
+        Params:
+        i....index of node
+        Returns:
+        j....index of the parent of node i, or -1 if n/a
+        """
+        if i == 0:
+            return -1
+        else:
+            return (i - 1) // 2
+        
+    def reheapUp(self, i):
+        """
+        Restore the heap property going upward from node i.
+        Swap node i with its parent while the heap property is violated.
+        See test_reheapUp.
+
+        Params:
+        i......index of the node to start with
+
+        Returns:
+        Nothing - this modifies the heap object directly.
+        """
+        c = i
+        p = self.parent(i)
+        print("reheaping  up from %d"%i)
+        while ((c != 0) and (self.H[c] < self.H[p])):
+            self.H[c], self.H[p] = self.H[p], self.H[c]
+            c = p 
+            p = self.parent(c)
+    # restore the heap property going downward from node i
+    def reheapDown(self, i):
+        """
+        Restore the heap property going downward from node i.
+        Swap node i with its *smaller* child while the heap property is violated.
+        See test_reheapDown.
+
+        Params:
+        i......index of the node to start with
+
+        Returns:
+        Nothing - this modifies the heap object directly.
+        """
+        c = i
+        while True: 
+            l = self.lchild(i)
+            r = self.rchild(i)
+            
+            if l != -1 and r != -1:
+                
+                smallest = l if self.H[l] < self.H[r] else r
+            elif l != -1:
+                
+                smallest = l
+            else:
+                
+                break
+            
+            if self.H[c] > self.H[smallest]:
+                self.H[c], self.H[smallest] = self.H[smallest], self.H[c]
+                c = smallest 
+            else:
+                break
+
+            
+        
+        
+    def deleteMin(self):
+        """
+        Remove the root node to return its value.
+        Set the last element in the heap to be the root,
+        then restore the heap property using reheapDown.
+        See test_deleteMin.
+
+        Returns:
+        the minimum value in the heap.
+        """
+        m = self.H[0]
+        if (len(self.H) > 1):
+            self.H[0] = self.H.pop()
+            self.reheapDown(0)
+        else:
+            self.H.pop() # removes the only element left
+        return m
+
+    def insert(self, x):
+        """
+        Insert a new value x. To do so, append x
+        to the list, then call reheapUp.
+        See test_insert.
+
+        Returns nothing.
+        """
+        self.H.append(x)
+        self.reheapUp(len(self.H)-1)
+
+def test_lchild():
+    heap = BinaryHeap()
+    heap.H = [10, 12, 15, 25, 30, 36]
+    assert heap.lchild(1) == 3
+    assert heap.lchild(2) == 5
+    assert heap.lchild(3) == -1
     
+def test_rchild():
+    heap = BinaryHeap()
+    heap.H = [10, 12, 15, 25, 30, 36]
+    assert heap.rchild(1) == 4
+    assert heap.rchild(2) == -1
+
+def test_parent():
+    heap = BinaryHeap()
+    heap.H = [10, 12, 15, 25, 30, 36]
+    assert heap.parent(1) == 0
+    assert heap.parent(2) == 0
+    assert heap.parent(4) == 1
+    assert heap.parent(0) == -1
+
+def test_reheapUp():
+    heap = BinaryHeap()
+    # we added the 7 at the end of the list, but it is
+    # out of place. We must promote it to the root.
+    heap.H = [10, 12, 15, 25, 30, 36, 7]
+    heap.reheapUp(6)  
+    assert heap.H == [7, 12, 10, 25, 30, 36, 15]
+
+def test_reheapDown():
+    heap = BinaryHeap()
+    heap.H = [13, 10, 12, 15, 25, 30, 36]
+    # the 13 is out of place. We must demote it one level to the left.
+    heap.reheapDown(0)  
+    assert heap.H == [10, 13, 12, 15, 25, 30, 36]
+
+def test_deleteMin():
+    heap = BinaryHeap()
+    heap.H = [10, 12, 15, 25, 30, 36]
+    heap.deleteMin()
+    print(heap.H)
+    assert heap.H == [12, 25, 15, 30, 36]
+
+def test_insert():
+    heap = BinaryHeap()
+    heap.H = [10, 12, 15, 25, 30, 36]
+    heap.insert(11)
+    assert heap.H == [10, 12, 11, 25, 30, 36, 15]
+
+
+def heapsort(a):
+    """
+    Sort a list a by first creating a heap, then 
+    iteratively removing the smallest element to
+    construct the sorted list
+
     Params:
-      a.....the input list
-      k.....the maximum element in a
-      
+    a......an unsorted list
+
     Returns:
-      sorted version a
+    sorted version of a
     """
-    counts = count_values(a, k)
-    positions = get_positions(counts)
-    return construct_output(a, positions)
-
-def count_values(a, k):
-    """
-    Params:
-      a.....input list
-      k.....maximum value in a
-      
-    Returns:
-      a list of k values; element i of the list indicates
-      how often value i appears in a
-      
-    >>> count_values([2,2,1,0,1,0,1,3], 3)
-    [2, 3, 2, 1]
-    """
-    count = [0] * (k + 1)
-
-    for i in a:
-        count[i] += 1
-    return count
-
-def test_count_values():
-    assert count_values([2,2,1,0,1,0,1,3], 3) == [2, 3, 2, 1]
+    H = BinaryHeap()
+    sorted_a = []
     
-def get_positions(counts):
-    """
-    Params:
-      counts...counts of each value in the input
-    Returns:
-      a list p where p[i] indicates the location of the first
-      appearance of i in the desired output.
-
-    >>> get_positions([2, 3, 2, 1])
-    [0, 2, 5, 7]    
-    """
-    pre, _ = scan(lambda x, y: x + y, 0, counts[:-1])
-    return [0] + pre
-    
-def test_get_positions():
-    assert get_positions([2, 3, 2, 1]) == [0, 2, 5, 7]
-    
-def construct_output(a, positions):
-    """
-    Construct the final, sorted output.
-
-    Params:
-      a...........input list
-      positions...list of first location of each value in the output.
-      
-    Returns:
-      sorted version of a
-
-    >>> construct_output([2,2,1,0,1,0,1,3], [0, 2, 5, 7])
-    [0,0,1,1,1,2,2,3]    
-    """
-    result = [0] * len(a)
-
-    position = positions[:]
-
     for i in a: 
-        result[position[i]] = i
-        position[i] += 1
+        H.insert(i)
 
-    return result
+    while len(H.H) > 0: 
+        sorted_a.append(H.deleteMin())
 
-def test_construct_output():
-    assert construct_output([2,2,1,0,1,0,1,3], [0, 2, 5, 7]) == [0,0,1,1,1,2,2,3]
-    
-def count_values_mr(a, k):
-    """
-    Use map-reduce to implement count_values.
-    This is done; you'll have to complete count_map and count_reduce.
-    """
-    # done.
-    int2count = dict(run_map_reduce(count_map, count_reduce, a))
-    return [int2count.get(i,0) for i in range(k+1)]
+    return sorted_a
 
-def test_count_values_mr():
-    assert count_values_mr([2,2,1,0,1,0,1,3], 3) == [2, 3, 2, 1]
-
-def count_map(value):
-    return [(value, 1)]
-
-def count_reduce(group):
-    key = group[0]  
-    total = sum(group[1])  
-    return (key, total)
-
-
-# the below functions are provided for use above.
-
-def run_map_reduce(map_f, reduce_f, mylist):
-    # done. 
-    pairs = flatten(list(map(map_f, mylist)))
-    groups = collect(pairs)
-    return [reduce_f(g) for g in groups]
-
-def collect(pairs):
-    # done.     
-    result = defaultdict(list)
-    for pair in sorted(pairs):
-        result[pair[0]].append(pair[1])
-    return list(result.items())
-
-def plus(x,y):
-    # done. 
-    return x + y
-
-
-def scan(f, id_, a):
-    # done. 
-    return (
-            [reduce(f, id_, a[:i+1]) for i in range(len(a))],
-             reduce(f, id_, a)
-           )
-
-def reduce(f, id_, a):
-    # done. do not change me.
-    if len(a) == 0:
-        return id_
-    elif len(a) == 1:
-        return a[0]
-    else:
-        return f(reduce(f, id_, a[:len(a)//2]),
-                 reduce(f, id_, a[len(a)//2:]))
-    
-def iterate(f, x, a):
-    # done. do not change me.
-    if len(a) == 0:
-        return x
-    else:
-        return iterate(f, f(x, a[0]), a[1:])
-    
-def flatten(sequences):
-    return iterate(plus, [], sequences)
+def test_heapsort():
+    L = [12,5,1,6,9,10,8,2]
+    assert heapsort(L) == sorted(L)    
